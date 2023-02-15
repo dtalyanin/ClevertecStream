@@ -9,34 +9,30 @@ import by.sologub.util.Util;
 
 import java.io.IOException;
 import java.math.BigDecimal;
-import java.math.MathContext;
 import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.Period;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 public class Main {
     public static void main(String[] args) throws IOException {
-//        task1();
-//        task2();
-//        task3();
-//        task4();
-//        task5();
-//        task6();
-//        task7();
-//        task8();
-//        task9();
-//        task10();
-//        task11();
-//        task12();
-//        task13();
-//        task14();
-//        task15();
+        task1();
+        task2();
+        task3();
+        task4();
+        task5();
+        task6();
+        task7();
+        task8();
+        task9();
+        task10();
+        task11();
+        task12();
+        task13();
+        task14();
+        task15();
         task16();
     }
 
@@ -163,7 +159,7 @@ public class Main {
         int academyCapacity = 200;
         Predicate<Person> ageInLimits = person -> {
             int age = Period.between(person.getDateOfBirth(), LocalDate.now()).getYears();
-            return age >= minAge && maxAge < maxAge;
+            return age >= minAge && age < maxAge;
         };
         people.stream()
                 .filter(person -> gender.equals(person.getGender()))
@@ -200,31 +196,41 @@ public class Main {
     }
 
     private static void task14() throws IOException {
+        enum CountryResolver {
+            TURKMENISTAN("1. Turkmenistan", car -> "Jaguar".equals(car.getCarMake()) || "White".equals(car.getColor())),
+            UZBEKISTAN("2. Uzbekistan", car -> car.getMass() < 1500 ||
+                    List.of("BMW", "Lexus", "Chrysler", "Toyota").contains(car.getCarMake())),
+            KAZAKHSTAN("3. Kazakhstan", car -> ("Black".equals(car.getColor()) && car.getMass() > 4000) ||
+                    List.of("GMC", "Dodge").contains(car.getCarMake())),
+            KYRGYZSTAN("4. Kyrgyzstan", car -> car.getReleaseYear() < 1982 ||
+                    List.of("Civic", "Cherokee").contains(car.getCarModel())),
+            RUSSIA("5. Russia", car -> !List.of("Yellow", "Red", "Green", "Blue").contains(car.getColor()) ||
+                    car.getPrice() > 40000),
+            MONGOLIA("6. Mongolia", car -> car.getVin().contains("59")),
+            NOT_DELIVERER("Not delivered", car -> true);
+
+            final String country;
+            final Predicate<Car> isForCountry;
+
+            CountryResolver(String country, Predicate<Car> isForCountry) {
+                this.country = country;
+                this.isForCountry = isForCountry;
+            }
+
+            public static String getCountryForDelivery(Car car) {
+                return Arrays.stream(CountryResolver.values())
+                        .filter(countryResolver -> countryResolver.isForCountry.test(car))
+                        .findFirst().get().country;
+            }
+        }
+
         List<Car> cars = Util.getCars();
         int kgToTonCoefficient = 1000;
         double pricePerTon = 7.14;
         int decimalPlaces = 2;
-        String keyNotDelivered = "Not delivered";
-        Predicate<Car> carForTurkmenistan = car -> "Jaguar".equals(car.getCarMake()) ||
-                "White".equals(car.getColor());
-        Predicate<Car> carForUzbekistan = car -> car.getMass() < 1500 ||
-                List.of("BMW", "Lexus", "Chrysler", "Toyota").contains(car.getCarMake());
-        Predicate<Car> carForKazakhstan = car -> ("Black".equals(car.getColor()) && car.getMass() > 4000) ||
-                List.of("GMC", "Dodge").contains(car.getCarMake());
-        Predicate<Car> carForKyrgyzstan = car -> car.getReleaseYear() < 1982 ||
-                List.of("Civic", "Cherokee").contains(car.getCarModel());
-        Predicate<Car> carForRussia = car -> !List.of("Yellow", "Red", "Green", "Blue").contains(car.getColor()) ||
-                car.getPrice() > 40000;
-        Predicate<Car> carForMongolia = car -> car.getVin().contains("59");
         Map<String, List<Car>> carsForDelivery = cars.stream()
-                .collect(Collectors.groupingBy(car ->
-                        carForTurkmenistan.test(car) ? "1. Turkmenistan" :
-                                carForUzbekistan.test(car) ? "2. Uzbekistan" :
-                                        carForKazakhstan.test(car) ? "3. Kazakhstan" :
-                                                carForKyrgyzstan.test(car) ? "4. Kyrgyzstan" :
-                                                        carForRussia.test(car) ? "5. Russia" :
-                                                                carForMongolia.test(car) ? "6. Mongolia" : keyNotDelivered));
-        carsForDelivery.remove(keyNotDelivered);
+                .collect(Collectors.groupingBy(CountryResolver::getCountryForDelivery));
+        carsForDelivery.remove(CountryResolver.NOT_DELIVERER.country);
         carsForDelivery.entrySet().stream()
                 .sorted(Map.Entry.comparingByKey(Comparator.reverseOrder()))
                 .peek(carsForCountry -> System.out.print(carsForCountry.getKey() + " has cars for "))
@@ -246,7 +252,6 @@ public class Main {
                         System.out.println(carsForCountry.getKey() + " has cars for " + carsForCountry.getValue() + "$"))
                 .map(Map.Entry::getValue).reduce(BigDecimal.ZERO, BigDecimal::add);
         System.out.println("Total sum vor delivery service: " + totalSum + "$");
-        ;
     }
 
     private static void task15() throws IOException {
@@ -277,5 +282,36 @@ public class Main {
     }
 
     private static void task16() throws IOException {
+        List<Person> people = Util.getPersons();
+        int minAge = 24;
+        int maxAge = 35;
+        String maleGender = "Male";
+        String femaleGender = "Female";
+        Map<String, Long> occupationsCount = people.stream()
+                .collect(Collectors.groupingBy(Person::getOccupation, Collectors.counting()));
+        long minOccupationCount = occupationsCount.values().stream().min(Long::compareTo).orElse(0L);
+        Set<String> rareOccupations = occupationsCount.entrySet().stream()
+                .filter(occupationCount -> occupationCount.getValue() == minOccupationCount)
+                .map(Map.Entry::getKey)
+                .collect(Collectors.toSet());
+        Predicate<Person> suitableAgeOrOccupation = person -> {
+            int age = Period.between(person.getDateOfBirth(), LocalDate.now()).getYears();
+            return (age >= minAge && age < maxAge) || rareOccupations.contains(person.getOccupation());
+        };
+        long neededOffices = people.stream()
+                .filter(person -> maleGender.equals(person.getGender()) || femaleGender.equals(person.getGender()))
+                .filter(suitableAgeOrOccupation)
+                .collect(Collectors.groupingBy(Person::getOccupation,
+                        Collectors.mapping(Person::getCity, Collectors.toSet())))
+                .entrySet()
+                .stream()
+                .sorted(Map.Entry.comparingByKey())
+                .peek(occupationCities -> System.out.printf("%s in %d countries\n",
+                        occupationCities.getKey(), occupationCities.getValue().size()))
+                .map(Map.Entry::getValue)
+                .flatMap(Set::stream)
+                .distinct()
+                .count();
+        System.out.println("Offices: " + neededOffices);
     }
 }
